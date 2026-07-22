@@ -7,6 +7,8 @@ services:
       POSTGRES_DB: rag
     volumes:
       - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U rag -d rag"]
       interval: 3s

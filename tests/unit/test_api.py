@@ -63,4 +63,4 @@ def test_valid_token_returns_200_with_agent_answer(client, monkeypatch):
     )
 
     assert response.status_code == 200
-    assert response.json() == {"answer": "answer to: hello"}
+    assert response.json() == {"answer": "answer to: hello", "citations": []}
