@@ -3,7 +3,7 @@ import json
 from functools import lru_cache
 
 from mcp import ClientSession
-from mcp.client.streamable_http import streamablehttp_client
+from mcp.client.streamable_http import streamable_http_client
 from openai import OpenAI
 
 from app.config import MCP_SERVER_URL, OPENAI_API_KEY, OPENAI_CHAT_MODEL
@@ -54,27 +54,58 @@ async def _execute_tool_call(session, tool_call, real_token: str):
     return await session.call_tool(tool_call.function.name, args)
 
 
+def _citations_from_tool_result(tool_name: str, structured_content) -> list[dict]:
+    if not structured_content:
+        return []
+    if tool_name == "search_knowledge":
+        items = structured_content.get("result", [])
+    elif tool_name == "get_document":
+        doc_id = structured_content.get("doc_id")
+        title = structured_content.get("title")
+        items = [{"doc_id": doc_id, "title": title, **chunk} for chunk in structured_content.get("chunks", [])]
+    else:
+        return []
+    return [
+        {
+            "doc_id": item["doc_id"],
+            "title": item.get("title"),
+            "heading": item.get("heading"),
+            "chunk_index": item.get("chunk_index"),
+        }
+        for item in items
+        if item.get("doc_id")
+    ]
+
+
 async def _run_conversation(session, openai_tools, messages, token: str) -> dict:
+    citations: dict[tuple, dict] = {}
     for _ in range(MAX_TOOL_ROUNDS):
         message = _next_model_response(messages, openai_tools)
         messages.append(message.model_dump(exclude_none=True))
 
         if not message.tool_calls:
-            return {"answer": message.content}
+            return {"answer": message.content, "citations": list(citations.values())}
 
         for tool_call in message.tool_calls:
             result = await _execute_tool_call(session, tool_call, token)
+            structured = getattr(result, "structuredContent", None)
             messages.append({
                 "role": "tool",
                 "tool_call_id": tool_call.id,
-                "content": json.dumps(getattr(result, "structuredContent", None)),
+                "content": json.dumps(structured),
             })
+            for citation in _citations_from_tool_result(tool_call.function.name, structured):
+                key = (citation["doc_id"], citation.get("chunk_index"))
+                citations.setdefault(key, citation)
 
-    return {"answer": "I wasn't able to finish within the allotted tool-call budget."}
+    return {
+        "answer": "I wasn't able to finish within the allotted tool-call budget.",
+        "citations": list(citations.values()),
+    }
 
 
 async def answer_question(token: str, question: str) -> dict:
-    async with streamablehttp_client(MCP_SERVER_URL) as (read, write, _):
+    async with streamable_http_client(MCP_SERVER_URL) as (read, write, _):
         async with ClientSession(read, write) as session:
             await session.initialize()
             tools = (await session.list_tools()).tools

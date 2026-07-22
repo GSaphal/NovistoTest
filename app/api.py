@@ -13,6 +13,7 @@ class AskRequest(BaseModel):
 
 class AskResponse(BaseModel):
     answer: str
+    citations: list[dict] = []
 
 
 def _extract_token(authorization: str | None) -> str:
@@ -32,4 +33,4 @@ async def ask(body: AskRequest, authorization: str | None = Header(default=None)
     except AuthError as e:
         raise HTTPException(status_code=401, detail=str(e)) from e
     result = await answer_question(token=token, question=body.question)
-    return AskResponse(answer=result["answer"])
+    return AskResponse(answer=result["answer"], citations=result.get("citations", []))
