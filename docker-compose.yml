@@ -7,13 +7,51 @@ services:
       POSTGRES_DB: rag
     volumes:
       - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U rag -d rag"]
       interval: 3s
       timeout: 3s
       retries: 20
+
+  ingest:
+    build: .
+    profiles: ["tools"]
+    command: python -m app.ingest
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://rag:rag@db:5432/rag
+      DATA_DIR: /srv/data
+    depends_on:
+      db:
+        condition: service_healthy
+
+  mcp-server:
+    build: .
+    command: python -m app.mcp_server
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://rag:rag@db:5432/rag
+      DATA_DIR: /srv/data
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: 8765
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8765:8765"
+
+  agent-api:
+    build: .
+    command: uvicorn app.api:app --host 0.0.0.0 --port 8000
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://rag:rag@db:5432/rag
+      DATA_DIR: /srv/data
+      MCP_SERVER_URL: http://mcp-server:8765/mcp
+    depends_on:
+      - mcp-server
+    ports:
+      - "8000:8000"
 
 volumes:
   pgdata:
