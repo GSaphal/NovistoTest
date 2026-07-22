@@ -6,8 +6,18 @@ TERMINAL_PUNCT = (".", "?", "!", ":")
 _HEADING_RE = re.compile(r"^[A-Z0-9]")
 _BULLET_RE = re.compile(r"^([•\-\*]|\d+[.)])\s+")
 _NUMERIC_TOKEN_RE = re.compile(r"(?<![A-Za-z])\d[\d,]*%?")
+_TRIGGER_RE = re.compile(r"CONFIDENTIAL", re.IGNORECASE)
+_BANNER_WINDOW = 150
+PROPAGATE_CHUNKS = 1
 
-
+_ROLE_PATTERNS = {
+    "exec": re.compile(r"\bEXEC(?:UTIVE)?(?:\s+COMMITTEE)?\b", re.IGNORECASE),
+    "finance": re.compile(r"\bFINANCE\b", re.IGNORECASE),
+    "people": re.compile(r"\b(PEOPLE|HR|HUMAN\s+RESOURCES)\b", re.IGNORECASE),
+    "sales": re.compile(r"\bSALES\b", re.IGNORECASE),
+    "marketing": re.compile(r"\bMARKETING\b", re.IGNORECASE),
+    "ops": re.compile(r"\b(OPS|OPERATIONS)\b", re.IGNORECASE),
+}
 
 @dataclass
 class Chunk:
@@ -29,6 +39,14 @@ def _is_heading(line: str) -> bool:
 
 def _is_bullet(line: str) -> bool:
     return bool(_BULLET_RE.match(line))
+
+def detect_banner_roles(text: str) -> set[str] | None:
+    trigger = _TRIGGER_RE.search(text)
+    if not trigger:
+        return None
+    window = text[trigger.start() : trigger.start() + _BANNER_WINDOW]
+    roles = {role for role, pattern in _ROLE_PATTERNS.items() if pattern.search(window)}
+    return roles or None
 
 def _to_units(text: str) -> list[str]:
     """Merge wrapped PDF lines into logical paragraph/bullet/heading units."""
@@ -63,7 +81,18 @@ def chunk_document(text: str, default_access: list[str]) -> list[Chunk]:
             continue
         raw_chunks.append((unit, current_heading))
 
-    return [
+    chunks = [
         Chunk(content=content, heading=heading, access=list(default_access))
         for content, heading in raw_chunks
     ]
+
+    for i, chunk in enumerate(chunks):
+        banner_roles = detect_banner_roles(chunk.content)
+        if banner_roles is None or not banner_roles < set(chunk.access):
+            continue
+        narrowed = sorted(banner_roles)
+        for j in range(i, min(i + 1 + PROPAGATE_CHUNKS, len(chunks))):
+            chunks[j].access = list(narrowed)
+            chunks[j].restricted_override = True
+
+    return chunks
