@@ -1,0 +1,16 @@
+{
+  "users": [
+    {
+      "id": "u_maria",
+      "name": "Maria (Marketing)",
+      "token": "tok_marketing_demo",
+      "roles": ["marketing"]
+    },
+    {
+      "id": "u_sam",
+      "name": "Sam (Sales)",
+      "token": "tok_sales_demo",
+      "roles": ["sales", "marketing"]
+    }
+  ]
+}
