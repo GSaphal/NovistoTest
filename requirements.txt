@@ -4,6 +4,7 @@ openai>=1.50
 psycopg[binary]>=3.2
 pgvector>=0.3
 fastapi>=0.115
+starlette==0.52.1
 uvicorn[standard]>=0.30
 mcp==1.28.1
 pydantic>=2.8

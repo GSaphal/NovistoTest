@@ -5,7 +5,7 @@ from mcp.server.fastmcp.exceptions import ToolError
 
 pytestmark = pytest.mark.unit
 
-FIXTURE_DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "fixtures")
+FIXTURE_DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 
 
 @pytest.fixture(autouse=True)

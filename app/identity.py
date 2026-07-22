@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass
 from functools import lru_cache
-
+import os
 from app.config import USERS_PATH
 
 
@@ -42,8 +42,6 @@ def resolve_token(token: str, users_by_token: dict[str, User]) -> User:
 
 @lru_cache(maxsize=1)
 def get_users_by_token() -> dict[str, User]:
-    """Production entry point: lazily loads once from the real users.json
-    path and caches it. Nothing else in the codebase should read
-    users.json directly -- callers use this; tests use load_users() with
-    a fixture path and never touch this cached singleton at all."""
-    return load_users(USERS_PATH)
+   
+    data_dir = os.environ.get("DATA_DIR", "/data")
+    return load_users(os.path.join(data_dir, "users.json"))
