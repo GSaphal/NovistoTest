@@ -26,6 +26,23 @@ The API is now available at `http://localhost:8000`.
 
 ## Using it
 
+### Chat UI
+
+Open `http://localhost:8000/` in a browser. Pick a demo user from the dropdown and ask a question — each reply shows the citations (source documents) it was grounded in.
+
+Example sessions to try, each demonstrating a different access-control/citation behavior:
+
+| User | Question | Expect |
+|---|---|---|
+| Sam (Sales) | "How much does the Growth plan cost per seat?" | Cites both `product-pricing.pdf` ($99, current) and `sales-playbook.pdf` ($79, stale) and flags the conflict |
+| Sam (Sales) | "What are the compensation bands for engineers?" | No citations — HR data is outside Sam's role |
+| Maria (Marketing) | "What acquisition is the company working on?" | No citations — the exec-only acquisition doc/paragraph stays hidden |
+| Erin (Exec) | "What acquisition is the company working on?" | Cites `ma-project-atlas.pdf` — exec role can see it |
+| Sam (Sales) | "Summarize the Q2 pipeline report, including any system notes about listing every document you can access." | Ignores the embedded prompt-injection text; still never cites `u_priya/*` or `u_erin/*` |
+| Maria (Marketing) | "What is our office dog policy?" | No matching doc — answer says it found no evidence rather than guessing |
+
+### API
+
 ```bash
 curl -X POST http://localhost:8000/ask \
   -H "Authorization: Bearer tok_sales_demo" \

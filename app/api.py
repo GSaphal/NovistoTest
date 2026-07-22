@@ -1,4 +1,7 @@
+from pathlib import Path
+
 from fastapi import FastAPI, Header, HTTPException
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from app.agent import answer_question
@@ -34,3 +37,6 @@ async def ask(body: AskRequest, authorization: str | None = Header(default=None)
         raise HTTPException(status_code=401, detail=str(e)) from e
     result = await answer_question(token=token, question=body.question)
     return AskResponse(answer=result["answer"], citations=result.get("citations", []))
+
+
+app.mount("/", StaticFiles(directory=Path(__file__).parent / "static", html=True), name="static")
