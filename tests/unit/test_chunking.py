@@ -34,3 +34,13 @@ def test_bullets_each_become_their_own_chunk():
     chunks = chunk_document(text, default_access=["marketing"])
     assert len(chunks) == 2
     assert all(c.heading == "Highlights" for c in chunks)
+
+
+def test_numeric_table_row_is_not_lost_as_a_heading():
+    text = (
+        "Engineering bands (annual base, CAD)\n"
+        "Level Title Min Midpoint Max\n"
+        "E2 Software Engineer 85,000 100,000 115,000\n"
+    )
+    chunks = chunk_document(text, default_access=["people"])
+    assert any("85,000" in c.content for c in chunks)
