@@ -1,0 +1,18 @@
+{
+  "documents": [
+    {
+      "path": "doc-a.pdf",
+      "title": "Doc A",
+      "access": ["marketing"],
+      "period": "2025-01",
+      "status": "current"
+    },
+    {
+      "path": "doc-b.pdf",
+      "title": "Doc B",
+      "access": ["people"],
+      "period": "2025-02",
+      "status": "current"
+    }
+  ]
+}
