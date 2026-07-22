@@ -5,6 +5,8 @@ TERMINAL_PUNCT = (".", "?", "!", ":")
 
 _HEADING_RE = re.compile(r"^[A-Z0-9]")
 _BULLET_RE = re.compile(r"^([•\-\*]|\d+[.)])\s+")
+_NUMERIC_TOKEN_RE = re.compile(r"(?<![A-Za-z])\d[\d,]*%?")
+
 
 
 @dataclass
@@ -13,7 +15,7 @@ class Chunk:
     heading: str | None
     access: list[str]
     restricted_override: bool = False
-    
+
 
 def _is_heading(line: str) -> bool:
     words = line.split()
@@ -22,6 +24,7 @@ def _is_heading(line: str) -> bool:
         and line[-1] not in ".?!,;:"
         and not _BULLET_RE.match(line)
         and bool(_HEADING_RE.match(line))
+        and len(_NUMERIC_TOKEN_RE.findall(line)) < 2 
     )
 
 def _is_bullet(line: str) -> bool:
